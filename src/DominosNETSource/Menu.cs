@@ -1,41 +1,43 @@
-﻿using System;
+using System;
+using System.Linq;
 using System.Collections.Generic;
-using System.Text;
-using DominosNET.Stores;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-namespace DominosNET.Menu
+namespace DominosNET
 {
-   /// <summary>
-   /// Class for a store's menu.
-   /// </summary>
+    public enum By
+    {
+        Code,
+        Name,
+        CodeAndName
+    }
+
     public class Menu
     {
-        public JObject MenuJSON;
-        public string Country;
+        public JObject menuJSON;
+        public Country country;
 
-        public static Menu FromStore(string storeid, string country)
+        public static Menu FromStore(string storeID, Country country)
         {
             async Task<string> GetMenuJSONString()
             {
-                if (country == "ca")
+                if (country == Country.CA)
                 {
-                    var httpClient = new HttpClient();
-                    string URL = urls.urls.ca["menu_url"].Replace("{store_id}", storeid).Replace("{lang}", "en");
+                    HttpClient httpClient = new HttpClient();
+                    string URL = urls.ca["menu_url"].Replace("{store_id}", storeID).Replace("{lang}", "en");
 
-                    var content = await httpClient.GetStringAsync(URL);
+                    string content = await httpClient.GetStringAsync(URL);
                     return content;
 
                 }
                 else
                 {
-                    var httpClient = new HttpClient();
-                    string URL = urls.urls.us["menu_url"].Replace("{store_id}", storeid).Replace("{lang}", "en");
+                    HttpClient httpClient = new HttpClient();
+                    string URL = urls.us["menu_url"].Replace("{store_id}", storeID).Replace("{lang}", "en");
 
-
-                    var content = await httpClient.GetStringAsync(URL);
+                    string content = await httpClient.GetStringAsync(URL);
                     return content;
 
                 }
@@ -43,33 +45,116 @@ namespace DominosNET.Menu
             JObject jsonData = JObject.Parse(GetMenuJSONString().Result);
             return new Menu(country, jsonData);
         }
-        public void Search(string searchTerm)
+
+        public IEnumerable<MenuItem> SearchMenu(string searchTerm, By by = By.CodeAndName)
         {
-            JObject predefinedproducts = JObject.Parse(MenuJSON["Variants"].ToString());
+            JObject predefinedproducts = JObject.Parse(menuJSON["Variants"].ToString());
 
             foreach (var predefinedproduct in predefinedproducts)
             {
-               
-                if (JObject.Parse(predefinedproduct.Value.ToString())["Code"].ToString().ToLower().Contains(searchTerm.ToLower()) && JObject.Parse(predefinedproduct.Value.ToString())["Price"] != null)
-                {
+                if (JObject.Parse(predefinedproduct.Value.ToString())["Price"] == null) continue;
 
-                    Console.WriteLine(JObject.Parse(predefinedproduct.Value.ToString())["Code"].ToString() + "  " + JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString() + "  " + "$" + JObject.Parse(predefinedproduct.Value.ToString())["Price"]);
-                }
-                else if (JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString().ToLower().Contains(searchTerm.ToLower()) && JObject.Parse(predefinedproduct.Value.ToString())["Price"] != null)
+                if (JObject.Parse(predefinedproduct.Value.ToString())["Code"].ToString().ToLower().Contains(searchTerm.ToLower()) && (by == By.Code || by == By.CodeAndName))
                 {
-                    Console.WriteLine(JObject.Parse(predefinedproduct.Value.ToString())["Code"].ToString() + "  " + JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString() + "  " + JObject.Parse(predefinedproduct.Value.ToString())["Price"]);
+                    yield return new MenuItem(predefinedproduct);
                 }
-                else if (JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString().ToLower().Contains(searchTerm.ToLower()) && JObject.Parse(predefinedproduct.Value.ToString())["Price"] != null)
+                else if (JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString().ToLower().Contains(searchTerm.ToLower()) && (by == By.Name || by == By.CodeAndName))
                 {
-                    Console.WriteLine(JObject.Parse(predefinedproduct.Value.ToString())["Code"].ToString() + "  " + JObject.Parse(predefinedproduct.Value.ToString())["Name"].ToString() + "  " + JObject.Parse(predefinedproduct.Value.ToString())["Price"]);
+                    yield return new MenuItem(predefinedproduct);
                 }
             }
         }
-        public Menu(string c, JObject j)
+
+        public IEnumerable<MenuItem> GetMenuItems()
         {
-            Country = c;
-            MenuJSON = j;
+            JObject predefinedproducts = JObject.Parse(menuJSON["Variants"].ToString());
+
+            foreach (var predefinedproduct in predefinedproducts)
+            {
+                if (JObject.Parse(predefinedproduct.Value.ToString())["Price"] != null)
+                {
+                    yield return new MenuItem(predefinedproduct);
+                }
+            }
         }
-        
+
+        public Menu(Country c, JObject j)
+        {
+            country = c;
+            menuJSON = j;
+        }
+    }
+
+    [Serializable]
+    public class InvalidItemException : Exception
+    {
+
+        public InvalidItemException() { }
+        public InvalidItemException(string message) : base(message) { }
+        public InvalidItemException(string message, Exception inner) : base(message, inner) { }
+        protected InvalidItemException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+    [Serializable]
+    public class ItemNotFoundException : Exception
+    {
+
+        public ItemNotFoundException() { }
+        public ItemNotFoundException(string message) : base(message) { }
+        public ItemNotFoundException(string message, Exception inner) : base(message, inner) { }
+        protected ItemNotFoundException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
+    public readonly struct MenuItem
+    {
+        public readonly string code, name;
+        public readonly decimal price;
+
+        public MenuItem(string code, string name, decimal price)
+        {
+            this.code = code;
+            this.name = name;
+            this.price = price;
+        }
+
+        public MenuItem(KeyValuePair<string, JToken> item)
+        {
+            code = JObject.Parse(item.Value.ToString())["Code"].ToString();
+            name = JObject.Parse(item.Value.ToString())["Name"].ToString();
+            price = decimal.Parse(JObject.Parse(item.Value.ToString())["Price"].ToString());
+        }
+
+        public static MenuItem FromCode(Menu menu, string itemCode)
+        {
+            IEnumerable<MenuItem> items = menu.SearchMenu(itemCode, By.Code);
+            MenuItem? item = null;
+
+            foreach (MenuItem i in items)
+            {
+                if(i.code == itemCode)
+                {
+                    item = i;
+                    break;
+                }
+            }
+
+            if (items.Count() > 0 && item.HasValue)
+            {
+                return items.First();
+            }
+            else
+            {
+                throw new ItemNotFoundException($"No item exists with code '{itemCode}'.");
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"[{code}]   \"{name}\"   ${Math.Round(price, 2)}";
+        }
     }
 }

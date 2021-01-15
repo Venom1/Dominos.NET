@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace DominosNET.Customer
+namespace DominosNET
 {
     ///<summary>
     /// The class for the customer, used to create an order.
@@ -18,7 +18,6 @@ namespace DominosNET.Customer
             first_name = firstname;
             last_name = lastname;
             email = e_mail;
-            
         }
     }
 }

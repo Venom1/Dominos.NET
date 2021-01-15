@@ -1,57 +1,50 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using DominosNET.urls;
 using System.Net.Http;
 using System.Threading.Tasks;
-using DominosNET.Menu;
 using Newtonsoft.Json.Linq;
 
-namespace DominosNET.Stores
+namespace DominosNET
 {
-   //TODO: Add a method which lets the user get a store by its' id.
+    //TODO: Add a method which lets the user get a store by its' id.
     public class Store
     {
-        
-        public static string Country;
-        public JObject Data;
+        public Country country;
+        public JObject data;
         public string id;
+
         private async Task<string> GetMenuJSONString()
         {
-            
-            if (Country == "ca")
+            if (country == Country.CA)
             {
                 var httpClient = new HttpClient();
-                string URL = urls.urls.ca["menu_url"].Replace("{store_id}", id).Replace("{lang}", "en");
+                string URL = urls.ca["menu_url"].Replace("{store_id}", id).Replace("{lang}", "en");
 
                 var content = await httpClient.GetStringAsync(URL);
                 return content;
-
             }
             else
             {
                 var httpClient = new HttpClient();
-                string URL = urls.urls.us["menu_url"].Replace("{store_id}", id).Replace("{lang}", "en");
+                string URL = urls.us["menu_url"].Replace("{store_id}", id).Replace("{lang}", "en");
 
-                
                 var content = await httpClient.GetStringAsync(URL);
                 return content;
-
             }
         }
 
-
-        public Menu.Menu GetMenu()
+        public Menu GetMenu()
         {
             JObject MenuJSON = JObject.Parse(GetMenuJSONString().Result);
-            return new Menu.Menu(Country, MenuJSON);
+            return new Menu(country, MenuJSON);
         }
-      
-        public Store(JObject data, string country, string storeid)
+
+        public Store(JObject data, Country country, string storeID)
         {
-            Country = country;
-            Data = data;
-            id = storeid;
+            this.country = country;
+            this.data = data;
+            this.id = storeID;
         }
     }
 }
