@@ -37,7 +37,7 @@ Store store = address.GetClosestStore();
 
 ```cs
 Menu menu = store.GetMenu();
-IEnumerable<MenuItem> items = menu.Search("Coke");
+IEnumerable<MenuItem> items = menu.SearchMenu("Coke");
 
 foreach(MenuItem item in items)
 {
@@ -52,11 +52,7 @@ D20BZRO    20oz Bottle Coke Zero™   $1.89
 2LDCOKE    2-Liter Diet Coke®       $2.99
 2LCOKE     2-Liter Coke®            $2.99
 ```
-Or, you can search coupons.
-```cs
-menu.SearchCoupons(" ");
-```
-(This would literally print all the coupons on the menu) <br>
+
 Create an order and add items to the order:
 ```cs
 Order order = new Order(store, customer, address);
