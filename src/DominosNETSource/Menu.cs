@@ -135,7 +135,7 @@ namespace DominosNET
 
             foreach (MenuItem i in items)
             {
-                if(i.code == itemCode)
+                if (i.code == itemCode)
                 {
                     item = i;
                     break;

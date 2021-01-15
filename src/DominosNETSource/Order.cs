@@ -221,14 +221,14 @@ namespace DominosNET
             return jsonResponse;
         }
 
-        public void PlaceOrder(string type)
+        public void PlaceOrder(PaymentType type)
         {
             bool isAcceptable = false;
             JArray acceptablePaymentTypes = (JArray)store.data["AcceptablePaymentTypes"];
 
             foreach (var v in acceptablePaymentTypes.Children())
             {
-                if (v.ToString() == type)
+                if (v.ToString() == type.ToString())
                 {
                     isAcceptable = true;
                 }
@@ -241,7 +241,7 @@ namespace DominosNET
 
             JArray paymentArray = JArray.Parse(data["Payments"].ToString());
             JObject typeObj = new JObject();
-            typeObj.Add("Type", type);
+            typeObj.Add("Type", type.ToString());
             paymentArray.Add(typeObj);
 
             if (country == Country.CA)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.Net.Http;
@@ -13,6 +14,7 @@ namespace DominosNET
         public Country country;
         public JObject data;
         public string id;
+        public List<PaymentType> acceptedPaymentTypes { get; }
 
         private async Task<string> GetMenuJSONString()
         {
@@ -45,6 +47,17 @@ namespace DominosNET
             this.country = country;
             this.data = data;
             this.id = storeID;
+            this.acceptedPaymentTypes = GetPaymentTypes(data).ToList();
+        }
+
+        private IEnumerable<PaymentType> GetPaymentTypes(JObject data)
+        {
+            JArray acceptablePaymentTypes = (JArray)data["AcceptablePaymentTypes"];
+
+            foreach (JToken token in acceptablePaymentTypes.Children())
+            {
+                yield return Enum.Parse<PaymentType>(token.ToString(), true);
+            }
         }
     }
 }

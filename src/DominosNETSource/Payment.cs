@@ -76,4 +76,13 @@ namespace DominosNET
             this.type = FindType(number);
         }
     }
+
+    public enum PaymentType
+    {
+        Cash,
+        GiftCard,
+        CreditCard,
+        DoorDebit,
+        DoorCredit
+    }
 }
