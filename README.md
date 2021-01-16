@@ -41,7 +41,7 @@ IEnumerable<MenuItem> items = menu.SearchMenu("Coke");
 
 foreach(MenuItem item in items)
 {
-  Console.WriteLine(item.ToString());
+    Console.WriteLine(item.ToString());
 }
 ```
 prints to the console something along the lines of:
@@ -85,11 +85,11 @@ order.PlaceOrder(creditCard);
 ```
 Or, you could pay with, for example, cash.
 ```cs
-order.place(PaymentType.Cash);
+order.PlaceOrder(PaymentType.Cash);
 ```
 You could also pay with GiftCard, CreditCard, DoorDebit, DoorCredit (will throw an exception if the store doesnt support said type)
 ```cs
-order.place(PaymentType.GiftCard);
+order.PlaceOrder(PaymentType.GiftCard);
 ```
 
 That's all, enjoy! Of course, more will be added in the future.
