@@ -8,10 +8,11 @@ using Newtonsoft.Json.Linq;
 
 namespace DominosNET
 {
-    //TODO: Add a method which lets the user get a store by its' id.
+    // TODO: Add a method which lets the user get a store by its' id.
     public class Store
     {
         public Country country;
+        public Address address;
         public JObject data;
         public string id;
         public List<PaymentType> acceptedPaymentTypes { get; }
@@ -42,11 +43,12 @@ namespace DominosNET
             return new Menu(country, MenuJSON);
         }
 
-        public Store(JObject data, Country country, string storeID)
+        public Store(JObject data, Country country, string storeID, Address address)
         {
             this.country = country;
             this.data = data;
             this.id = storeID;
+            this.address = address;
             this.acceptedPaymentTypes = GetPaymentTypes(data).ToList();
         }
 
@@ -58,6 +60,20 @@ namespace DominosNET
             {
                 yield return Enum.Parse<PaymentType>(token.ToString(), true);
             }
+        }
+    }
+
+    public readonly struct StoreInfo
+    {
+        public readonly Store store;
+        public readonly bool isOpen;
+        public readonly List<ServiceType> openServiceTypes;
+
+        public StoreInfo(Store store, bool isOpen, List<ServiceType> openServiceTypes)
+        {
+            this.store = store;
+            this.isOpen = isOpen;
+            this.openServiceTypes = openServiceTypes;
         }
     }
 }

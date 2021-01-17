@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -42,23 +43,21 @@ namespace DominosNET
         public string region; //state or province
         public string zip; //This can be your postal code if you live in canada
         public Country country;
-        public ServiceType serviceType;
 
-        public Address(string street, string city, string region, string zip, Country country, ServiceType serviceType)
+        public Address(string street, string city, string region, string zip, Country country)
         {
             this.street = street;
             this.city = city;
             this.region = region;
             this.zip = zip;
             this.country = country;
-            this.serviceType = serviceType;
         }
 
-        public Store GetClosestStore()
+        public Store GetClosestStore(ServiceType serviceType)
         {
             Store closestStore = null;
 
-            async Task<String> GetJSON()
+            async Task<string> GetJSON()
             {
                 if (country == Country.CA)
                 {
@@ -78,7 +77,7 @@ namespace DominosNET
                 }
             }
 
-            async Task<String> GetStoreInfo(string storeId)
+            async Task<string> GetStoreInfo(string storeId)
             {
                 if (country == Country.CA)
                 {
@@ -87,19 +86,14 @@ namespace DominosNET
 
                     var content = await httpClient.GetStringAsync(URL);
                     return content;
-
                 }
                 else
                 {
-
                     var httpClient = new HttpClient();
                     string URL = urls.us["info_url"].Replace("{store_id}", storeId);
 
-
                     var content = await httpClient.GetStringAsync(URL);
-
                     return content;
-
                 }
             }
 
@@ -111,7 +105,9 @@ namespace DominosNET
                 {
                     if (store["IsOnlineNow"].ToObject<bool>() && store["ServiceIsOpen"][serviceType.ToString()].ToObject<bool>())
                     {
-                        closestStore = new Store(JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result), country, store["StoreID"].ToString());
+                        JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
+                        Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
+                        closestStore = new Store(data, country, store["StoreID"].ToString(), address);
                         break;
                     }
                 }
@@ -123,6 +119,101 @@ namespace DominosNET
                 throw new StoreNotFoundException("Error: No stores nearby are currently open. Try using another service method (e.g ServiceType.Carryout instead of ServiceType.Delivery).");
             }
             return closestStore;
+        }
+
+        /// <param name="getClosed">Should closed stores also be included in the search?</param>
+        public IEnumerable<StoreInfo> GetClosestStores(ServiceType serviceType, bool getClosed = false)
+        {
+            async Task<string> GetJSON()
+            {
+                if (country == Country.CA)
+                {
+                    var httpClient = new HttpClient();
+                    string URL = urls.ca["find_url"].Replace("{line1}", street).Replace("{line2}", city + ", " + region + ", " + zip).Replace("{type}", serviceType.ToString());
+
+                    var content = await httpClient.GetStringAsync(URL);
+                    return content;
+                }
+                else
+                {
+                    var httpClient = new HttpClient();
+                    string URL = urls.us["find_url"].Replace("{line1}", street).Replace("{line2}", city + ", " + region + ", " + zip).Replace("{type}", serviceType.ToString());
+
+                    var content = await httpClient.GetStringAsync(URL);
+                    return content;
+                }
+            }
+
+            async Task<string> GetStoreInfo(string storeId)
+            {
+                if (country == Country.CA)
+                {
+                    var httpClient = new HttpClient();
+                    string URL = urls.ca["info_url"].Replace("{store_id}", storeId);
+
+                    var content = await httpClient.GetStringAsync(URL);
+                    return content;
+                }
+                else
+                {
+                    var httpClient = new HttpClient();
+                    string URL = urls.us["info_url"].Replace("{store_id}", storeId);
+
+                    var content = await httpClient.GetStringAsync(URL);
+                    return content;
+                }
+            }
+
+            IEnumerable<StoreInfo> SetStoreClass()
+            {
+                JObject json = JObject.Parse(GetJSON().Result);
+                JArray stores = JArray.Parse(json["Stores"].ToString());
+                foreach (JObject store in stores.Children())
+                {
+                    if (getClosed)
+                    {
+                        List<ServiceType> openTypes = new List<ServiceType>();
+                        foreach (string type in Enum.GetNames<ServiceType>())
+                        {
+                            if (store["ServiceIsOpen"][serviceType.ToString()].ToObject<bool>())
+                            {
+                                openTypes.Add(Enum.Parse<ServiceType>(type));
+                            }
+                        }
+
+                        JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
+                        Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
+                        Store str = new Store(data, country, store["StoreID"].ToString(), address);
+                        yield return new StoreInfo(str, store["IsOnlineNow"].ToObject<bool>(), openTypes);
+                    }
+                    else
+                    {
+                        if (store["IsOnlineNow"].ToObject<bool>() && store["ServiceIsOpen"][serviceType.ToString()].ToObject<bool>())
+                        {
+                            List<ServiceType> openTypes = new List<ServiceType>();
+                            foreach (string type in Enum.GetNames<ServiceType>())
+                            {
+                                if (store["ServiceIsOpen"][serviceType.ToString()].ToObject<bool>())
+                                {
+                                    openTypes.Add(Enum.Parse<ServiceType>(type));
+                                }
+                            }
+
+                            JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
+                            Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
+                            Store str = new Store(data, country, store["StoreID"].ToString(), address);
+                            yield return new StoreInfo(str, true, openTypes);
+                        }
+                    }
+                }
+            }
+
+            return SetStoreClass();
+        }
+
+        public override string ToString()
+        {
+            return $"{street}, {city}, {region}";
         }
     }
 }

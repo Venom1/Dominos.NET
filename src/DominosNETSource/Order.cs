@@ -21,6 +21,7 @@ namespace DominosNET
         public Customer customer;
         public Address address;
         public Country country;
+        public ServiceType serviceType;
         public Store store;
         public List<MenuItem> Items { get; }
         public List<Coupon> Coupons { get; }
@@ -29,7 +30,7 @@ namespace DominosNET
         /// Multiply this by your tax rate to get the actual price
         /// </summary>
         public decimal price = 0;
-        public Order(Store s, Customer c, Address a)
+        public Order(Store s, Customer c, Address a, ServiceType st)
         {
             Items = new List<MenuItem>();
             Coupons = new List<Coupon>();
@@ -38,6 +39,7 @@ namespace DominosNET
             store = s;
             customer = c;
             address = a;
+            serviceType = st;
             data = JObject.Parse(@"
             {
     ""Address"": {
@@ -75,7 +77,7 @@ namespace DominosNET
 }
                                 ");
             JObject addressData = (JObject)data["Address"];
-            data["ServiceMethod"] = address.serviceType.ToString();
+            data["ServiceMethod"] = serviceType.ToString();
             addressData["Street"] = a.street;
             addressData["City"] = a.city;
             addressData["Region"] = a.region;
@@ -139,7 +141,7 @@ namespace DominosNET
 
             foreach (JToken vsm in JArray.Parse(item["Tags"]["ValidServiceMethods"].ToString()).Children())
             {
-                if (address.serviceType.ToString() == vsm.ToString())
+                if (serviceType.ToString() == vsm.ToString())
                 {
                     isAcceptableOrderType = true;
                     break;
