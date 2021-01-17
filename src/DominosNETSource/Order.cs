@@ -118,12 +118,13 @@ namespace DominosNET
 
             for (int i = 0; i < quantityToRemove; i++)
             {
-
-                JObject jItem = (JObject)menuJSON["Coupons"][item.code];
+                JObject jItem = (JObject)menuJSON["Variants"][item.code];
                 JArray a = (JArray)data["Products"];
                 a.Remove((JToken)jItem);
-                price -= item.price;
-                Items.Remove(item);
+                if(Items.Remove(item))
+                {
+                    price -= item.price;
+                }
             }
         }
 
