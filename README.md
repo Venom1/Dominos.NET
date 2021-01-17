@@ -10,7 +10,6 @@ Order Dominos Pizza using .NET! (Works in the US and Canada, more country suppor
 3. Get pizza-ing!
 
 # Tutorial
-**Coupons coming soon!**
 NOTE: Set your consoles encoding to UTF8 for certain symbols such as ® to render (if you're using this in the console, that is):
 ```cs
 Console.OutputEncoding = Encoding.UTF8;
@@ -22,16 +21,16 @@ using DominosNET;
 Construct a `Customer`and `Address` object.
 ```cs
 Customer customer = new Customer("2024561111", "Joe", "Biden", "joe@gmail.com");
-Address address = new Address("1600 Pennsylvania Avenue NW", "Washington", "DC", "20500", Country.US, ServiceType.Delivery);
+Address address = new Address("1600 Pennsylvania Avenue NW", "Washington", "DC", "20500", Country.US);
 ```
 Or, if you live in Canada:
 ```cs
 Customer customer = new Customer("6139924793", "Justin", "Trudeau", "justin@gmail.com");
-Address address = new Address("Wellington Street", "Ottawa", "Ontario", "K1A0A9", Country.CA, ServiceType.Delivery);
+Address address = new Address("Wellington Street", "Ottawa", "Ontario", "K1A0A9", Country.CA);
 ```
 Then, get the nearest store to the user that supports the given service type:
 ```cs
-Store store = address.GetClosestStore();
+Store store = address.GetClosestStore(ServiceType.Delivery);
 ```
 
 
@@ -87,7 +86,7 @@ Or, you could pay with, for example, cash.
 ```cs
 order.PlaceOrder(PaymentType.Cash);
 ```
-You could also pay with GiftCard, CreditCard, DoorDebit, DoorCredit (will throw an exception if the store doesnt support said type)
+You could also pay with GiftCard, CreditCard, DoorDebit, DoorCredit (will throw an exception if the store doesn't support said type).
 ```cs
 order.PlaceOrder(PaymentType.GiftCard);
 ```
