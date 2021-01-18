@@ -90,5 +90,8 @@ You could also pay with GiftCard, CreditCard, DoorDebit, DoorCredit (will throw 
 ```cs
 order.PlaceOrder(PaymentType.GiftCard);
 ```
-
+Or, if you don't want to actually order something, use `TestPlaceOrder` to test.
+```cs
+order.TestPlaceOrder(PaymentType.Cash);
+```
 That's all, enjoy! Of course, more will be added in the future.
