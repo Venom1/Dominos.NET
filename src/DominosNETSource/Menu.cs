@@ -156,5 +156,15 @@ namespace DominosNET
         {
             return $"[{code}]   \"{name}\"   ${Math.Round(price, 2)}";
         }
+
+        public override bool Equals(object obj)
+        {
+            return ((MenuItem)obj).code == code;
+        }
+
+        public override int GetHashCode()
+        {
+            return code.GetHashCode();
+        }
     }
 }

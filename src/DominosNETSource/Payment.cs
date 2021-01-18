@@ -19,17 +19,6 @@ namespace DominosNET
             JCB
         };
 
-        [Serializable]
-        private class InvalidCardException : Exception
-        {
-            public InvalidCardException() { }
-            public InvalidCardException(string message) : base(message) { }
-            public InvalidCardException(string message, Exception inner) : base(message, inner) { }
-            protected InvalidCardException(
-              System.Runtime.Serialization.SerializationInfo info,
-              System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-        }
-
         private static CardType FindType(string cardNumber)
         {
             //https://www.regular-expressions.info/creditcard.html
@@ -75,6 +64,17 @@ namespace DominosNET
             this.zip = zip;
             this.type = FindType(number);
         }
+    }
+
+    [Serializable]
+    public class InvalidCardException : Exception
+    {
+        public InvalidCardException() { }
+        public InvalidCardException(string message) : base(message) { }
+        public InvalidCardException(string message, Exception inner) : base(message, inner) { }
+        protected InvalidCardException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     public enum PaymentType

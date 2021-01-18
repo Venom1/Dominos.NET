@@ -121,7 +121,7 @@ namespace DominosNET
                 JObject jItem = (JObject)menuJSON["Variants"][item.code];
                 JArray a = (JArray)data["Products"];
                 a.Remove((JToken)jItem);
-                if(Items.Remove(item))
+                if (Items.Remove(item))
                 {
                     price -= item.price;
                 }
@@ -192,9 +192,9 @@ namespace DominosNET
         {
             data["StoreID"] = store.id;
             data["Email"] = customer.email;
-            data["FirstName"] = customer.first_name;
-            data["LastName"] = customer.last_name;
-            data["Phone"] = customer.phone_number;
+            data["FirstName"] = customer.firstName;
+            data["LastName"] = customer.lastName;
+            data["Phone"] = customer.phoneNumber;
             HttpClient c = new HttpClient();
             StringContent stringContent = null;
 
@@ -224,20 +224,11 @@ namespace DominosNET
             return jsonResponse;
         }
 
-        public void PlaceOrder(PaymentType type)
+        public OrderInfo PlaceOrder(PaymentType type)
         {
-            bool isAcceptable = false;
-            JArray acceptablePaymentTypes = (JArray)store.data["AcceptablePaymentTypes"];
+            List<PaymentType> acceptablePaymentTypes = store.acceptedPaymentTypes;
 
-            foreach (var v in acceptablePaymentTypes.Children())
-            {
-                if (v.ToString() == type.ToString())
-                {
-                    isAcceptable = true;
-                }
-            }
-
-            if (!isAcceptable)
+            if (!acceptablePaymentTypes.Contains(type))
             {
                 throw new Exception("Store does not support type " + type + ".");
             }
@@ -255,15 +246,18 @@ namespace DominosNET
             {
                 send(urls.ca["place_url"], false, send(urls.us["price_url"], true, null).ToString());
             }
+
+            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
         }
 
-        public void PlaceOrder(Card o)
+        public OrderInfo PlaceOrder(Card o)
         {
             bool isAcceptableCard = false;
             bool canPayWithCard = false;
 
             JArray acceptableCards = (JArray)store.data["AcceptableCreditCards"];
-            JArray acceptablePaymentTypes = (JArray)store.data["AcceptablePaymentTypes"];
+            List<PaymentType> acceptablePaymentTypes = store.acceptedPaymentTypes;
             foreach (var v in acceptableCards.Children())
             {
                 if (v.ToString() == o.type.ToString())
@@ -271,12 +265,9 @@ namespace DominosNET
                     isAcceptableCard = true;
                 }
             }
-            foreach (var v in acceptablePaymentTypes.Children())
+            if (acceptablePaymentTypes.Contains(PaymentType.CreditCard))
             {
-                if (v.ToString() == "CreditCard")
-                {
-                    isAcceptableCard = true;
-                }
+                isAcceptableCard = true;
             }
             if (canPayWithCard == false)
             {
@@ -307,6 +298,53 @@ namespace DominosNET
             {
                 send(urls.ca["place_url"], false, send(urls.us["price_url"], true, null).ToString());
             }
+
+            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+        }
+
+        public OrderInfo TestPlaceOrder(PaymentType type)
+        {
+            List<PaymentType> acceptablePaymentTypes = store.acceptedPaymentTypes;
+
+            if (!acceptablePaymentTypes.Contains(type))
+            {
+                throw new Exception("Store does not support payment type " + type.ToString() + ".");
+            }
+
+            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+        }
+
+        public OrderInfo TestPlaceOrder(Card o)
+        {
+            bool isAcceptableCard = false;
+            bool canPayWithCard = false;
+
+            JArray acceptableCards = (JArray)store.data["AcceptableCreditCards"];
+            List<PaymentType> acceptablePaymentTypes = store.acceptedPaymentTypes;
+            foreach (var v in acceptableCards.Children())
+            {
+                if (v.ToString() == o.type.ToString())
+                {
+                    isAcceptableCard = true;
+                }
+            }
+            if (acceptablePaymentTypes.Contains(PaymentType.CreditCard))
+            {
+                isAcceptableCard = true;
+            }
+            if (canPayWithCard == false)
+            {
+                throw new Exception("Store does not support credit cards.");
+            }
+            if (!isAcceptableCard)
+            {
+                throw new Exception("Store does not support payment type " + PaymentType.CreditCard.ToString() + ".");
+            }
+
+            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
         }
     }
 
@@ -317,6 +355,17 @@ namespace DominosNET
         public Coupon(string code)
         {
             this.code = code;
+        }
+    }
+
+    public readonly struct OrderInfo
+    {
+        public readonly int minEstimatedWaitMinutes, maxEstimatedWaitMinutes;
+
+        public OrderInfo(int minEstWaitMinutes, int maxEstWaitMinutes)
+        {
+            minEstimatedWaitMinutes = minEstWaitMinutes;
+            maxEstimatedWaitMinutes = maxEstWaitMinutes;
         }
     }
 }
