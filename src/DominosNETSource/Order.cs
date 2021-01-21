@@ -267,7 +267,7 @@ namespace DominosNET
             }
             if (acceptablePaymentTypes.Contains(PaymentType.CreditCard))
             {
-                isAcceptableCard = true;
+                canPayWithCard = true;
             }
             if (canPayWithCard == false)
             {
@@ -332,7 +332,7 @@ namespace DominosNET
             }
             if (acceptablePaymentTypes.Contains(PaymentType.CreditCard))
             {
-                isAcceptableCard = true;
+                canPayWithCard = true;
             }
             if (canPayWithCard == false)
             {
