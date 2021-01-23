@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
 using System.Net;
@@ -23,7 +24,11 @@ namespace DominosNET
         public Country country;
         public ServiceType serviceType;
         public Store store;
+
+        /// <summary> Use the AddItem() and RemoveItem() functions to add and remove items from your order. </summary>
         public List<MenuItem> Items { get; }
+
+        /// <summary> Use the AddCoupon() and RemoveCoupon() functions to add and remove coupons from your order. </summary>
         public List<Coupon> Coupons { get; }
 
         /// <summary>
@@ -82,7 +87,7 @@ namespace DominosNET
             addressData["City"] = a.city;
             addressData["Region"] = a.region;
             addressData["PostalCode"] = a.zip;
-            if (a.street.ToLower().Contains("apartment") || a.street.ToLower().Contains("apt") || a.street.ToLower().Contains("#"))
+            if (a.street.ToLower().Contains("apartment") || Regex.Match(a.street.ToLower(), "\bapt\b").Success || a.street.ToLower().Contains("#"))
             {
                 addressData["Type"] = "Apartment";
             }
@@ -151,7 +156,7 @@ namespace DominosNET
 
             if (!isAcceptableOrderType)
             {
-                throw new Exception($"Coupon '{coupon.code}' does not support your service type.");
+                throw new NotSupportedException($"Coupon '{coupon.code}' does not support your service type.");
             }
 
             foreach (JToken jCoupon in a.Children())
@@ -230,7 +235,7 @@ namespace DominosNET
 
             if (!acceptablePaymentTypes.Contains(type))
             {
-                throw new Exception("Store does not support type " + type + ".");
+                throw new NotSupportedException("Store does not support type " + type + ".");
             }
 
             JArray paymentArray = JArray.Parse(data["Payments"].ToString());
@@ -244,11 +249,11 @@ namespace DominosNET
             }
             else
             {
-                send(urls.ca["place_url"], false, send(urls.us["price_url"], true, null).ToString());
+                send(urls.us["place_url"], false, send(urls.us["price_url"], true, null).ToString());
             }
 
-            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
-            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+            List<JToken> waitTimeTokens = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeTokens[0].ToObject<int>(), waitTimeTokens[1].ToObject<int>());
         }
 
         public OrderInfo PlaceOrder(Card o)
@@ -271,7 +276,7 @@ namespace DominosNET
             }
             if (canPayWithCard == false)
             {
-                throw new Exception("Store does not support credit cards.");
+                throw new NotSupportedException("Store does not support credit cards.");
             }
             if (isAcceptableCard)
             {
@@ -288,7 +293,7 @@ namespace DominosNET
             }
             else
             {
-                throw new Exception("Card unsupported.");
+                throw new NotSupportedException("Card unsupported.");
             }
             if (country == Country.CA)
             {
@@ -296,11 +301,11 @@ namespace DominosNET
             }
             else
             {
-                send(urls.ca["place_url"], false, send(urls.us["price_url"], true, null).ToString());
+                send(urls.us["place_url"], false, send(urls.us["price_url"], true, null).ToString());
             }
 
-            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
-            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+            List<JToken> waitTimeTokens = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeTokens[0].ToObject<int>(), waitTimeTokens[1].ToObject<int>());
         }
 
         public OrderInfo TestPlaceOrder(PaymentType type)
@@ -309,11 +314,11 @@ namespace DominosNET
 
             if (!acceptablePaymentTypes.Contains(type))
             {
-                throw new Exception("Store does not support payment type " + type.ToString() + ".");
+                throw new NotSupportedException("Store does not support payment type " + type.ToString() + ".");
             }
 
-            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
-            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+            List<JToken> waitTimeTokens = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeTokens[0].ToObject<int>(), waitTimeTokens[1].ToObject<int>());
         }
 
         public OrderInfo TestPlaceOrder(Card o)
@@ -336,16 +341,27 @@ namespace DominosNET
             }
             if (canPayWithCard == false)
             {
-                throw new Exception("Store does not support credit cards.");
+                throw new NotSupportedException("Store does not support credit cards.");
             }
             if (!isAcceptableCard)
             {
-                throw new Exception("Store does not support payment type " + PaymentType.CreditCard.ToString() + ".");
+                throw new NotSupportedException("Store does not support payment type " + PaymentType.CreditCard.ToString() + ".");
             }
 
-            List<JToken> waitTimeToken = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
-            return new OrderInfo(waitTimeToken[0].ToObject<int>(), waitTimeToken[1].ToObject<int>());
+            List<JToken> waitTimeTokens = store.data["ServiceMethodEstimatedWaitMinutes"]!.Children().ToList()[serviceType == ServiceType.Delivery ? 0 : 1].Children().First().ToList();
+            return new OrderInfo(waitTimeTokens[0].ToObject<int>(), waitTimeTokens[1].ToObject<int>());
         }
+    }
+
+    [Serializable]
+    public class NotSupportedException : Exception
+    {
+        public NotSupportedException() { }
+        public NotSupportedException(string message) : base(message) { }
+        public NotSupportedException(string message, Exception inner) : base(message, inner) { }
+        protected NotSupportedException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
     public readonly struct Coupon
@@ -360,12 +376,12 @@ namespace DominosNET
 
     public readonly struct OrderInfo
     {
-        public readonly int minEstimatedWaitMinutes, maxEstimatedWaitMinutes;
+        public readonly int minWaitMinutes, maxWaitMinutes;
 
         public OrderInfo(int minEstWaitMinutes, int maxEstWaitMinutes)
         {
-            minEstimatedWaitMinutes = minEstWaitMinutes;
-            maxEstimatedWaitMinutes = maxEstWaitMinutes;
+            minWaitMinutes = minEstWaitMinutes;
+            maxWaitMinutes = maxEstWaitMinutes;
         }
     }
 }
