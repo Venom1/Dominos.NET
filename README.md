@@ -1,6 +1,6 @@
 # Dominos.NET
 **A C# Wrapper for [pizzapi.](https://github.com/ggrammar/pizzapi)**<br>
-Order Dominos Pizza using .NET! (Works in the US and Canada, more country support coming soon.)<br>
+Order Dominos Pizza using C#! (Currently works in the US and Canada.)<br>
 **Made with [Json.NET.](https://www.newtonsoft.com/json)**
 
 
@@ -74,12 +74,12 @@ There are two methods to do this, credit card or no credit card.
 Lets go over the first one. To place an order with a credit card, construct a `Card` and use that.
 Canada:
 ```cs
-Card creditCard = new Card("Justin Trudeau", "0123", "4498584993849383", "456" "K1A0A9");
+Card creditCard = new Card("Justin Trudeau", "01/23", "4498584993849383", "456" "K1A0A9");
 order.PlaceOrder(creditCard);
 ```
 America:
 ```cs
-Card creditCard = new Card("Joe Biden", "0123", "4498584993849383", "456" "20500");
+Card creditCard = new Card("Joe Biden", "01/23", "4498584993849383", "456" "20500");
 order.PlaceOrder(creditCard);
 ```
 Or, you could pay with, for example, cash.
