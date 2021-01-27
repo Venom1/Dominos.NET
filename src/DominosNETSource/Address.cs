@@ -25,19 +25,6 @@ namespace DominosNET
 
     public class Address
     {
-
-        [Serializable]
-        private class StoreNotFoundException : Exception
-        {
-
-            public StoreNotFoundException() { }
-            public StoreNotFoundException(string message) : base(message) { }
-            public StoreNotFoundException(string message, Exception inner) : base(message, inner) { }
-            protected StoreNotFoundException(
-              System.Runtime.Serialization.SerializationInfo info,
-              System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
-        }
-
         public string street;
         public string city;
         public string region; //state or province
@@ -53,6 +40,9 @@ namespace DominosNET
             this.country = country;
         }
 
+        /// <summary>
+        /// Returns closest store that is open, or null if none is found.
+        /// </summary>
         public Store GetClosestStore(ServiceType serviceType)
         {
             Store closestStore = null;
@@ -107,17 +97,13 @@ namespace DominosNET
                     {
                         JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
                         Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
-                        closestStore = new Store(data, country, store["StoreID"].ToString(), address);
+                        closestStore = new Store(data, country, store["StoreID"].ToString(), address, store["MaxDistance"].ToObject<decimal>());
                         break;
                     }
                 }
             }
 
             SetStoreClass();
-            if (closestStore == null)
-            {
-                throw new StoreNotFoundException("Error: No stores nearby are currently open. Try using another service method (e.g ServiceType.Carryout instead of ServiceType.Delivery).");
-            }
             return closestStore;
         }
 
@@ -183,7 +169,7 @@ namespace DominosNET
 
                         JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
                         Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
-                        Store str = new Store(data, country, store["StoreID"].ToString(), address);
+                        Store str = new Store(data, country, store["StoreID"].ToString(), address, store["MaxDistance"].ToObject<decimal>());
                         yield return new StoreInfo(str, store["IsOnlineNow"].ToObject<bool>(), openTypes);
                     }
                     else
@@ -201,7 +187,7 @@ namespace DominosNET
 
                             JObject data = JObject.Parse(GetStoreInfo(store["StoreID"].ToString()).Result);
                             Address address = new Address(data["StreetName"].ToString(), data["City"].ToString(), data["Region"].ToString(), data["PostalCode"].ToString(), country);
-                            Store str = new Store(data, country, store["StoreID"].ToString(), address);
+                            Store str = new Store(data, country, store["StoreID"].ToString(), address, store["MaxDistance"].ToObject<decimal>());
                             yield return new StoreInfo(str, true, openTypes);
                         }
                     }
@@ -215,5 +201,17 @@ namespace DominosNET
         {
             return $"{street}, {city}, {region}";
         }
+    }
+
+    [Serializable]
+    class StoreNotFoundException : Exception
+    {
+
+        public StoreNotFoundException() { }
+        public StoreNotFoundException(string message) : base(message) { }
+        public StoreNotFoundException(string message, Exception inner) : base(message, inner) { }
+        protected StoreNotFoundException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 }

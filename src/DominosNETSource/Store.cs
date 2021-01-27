@@ -14,6 +14,7 @@ namespace DominosNET
         public Country country;
         public Address address;
         public JObject data;
+        public decimal distance;
         public string id;
         public List<PaymentType> acceptedPaymentTypes { get; }
 
@@ -39,17 +40,18 @@ namespace DominosNET
 
         public Menu GetMenu()
         {
-            JObject MenuJSON = JObject.Parse(GetMenuJSONString().Result);
-            return new Menu(country, MenuJSON);
+            JObject menuJSON = JObject.Parse(GetMenuJSONString().Result);
+            return new Menu(country, menuJSON);
         }
 
-        public Store(JObject data, Country country, string storeID, Address address)
+        public Store(JObject data, Country country, string storeID, Address address, decimal distance)
         {
             this.country = country;
             this.data = data;
             this.id = storeID;
             this.address = address;
             this.acceptedPaymentTypes = GetPaymentTypes(data).ToList();
+            this.distance = distance;
         }
 
         private IEnumerable<PaymentType> GetPaymentTypes(JObject data)

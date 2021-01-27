@@ -135,8 +135,6 @@ namespace DominosNET
 
         public void AddCoupon(Coupon coupon)
         {
-            bool isAcceptableOrderType = false;
-
             if ((JObject)menuJSON["Coupons"][coupon.code] == null)
             {
                 throw new InvalidItemException($"Invalid coupon code '{coupon.code}'.");
@@ -145,16 +143,7 @@ namespace DominosNET
             JObject item = (JObject)menuJSON["Coupons"][coupon.code];
             JArray a = (JArray)data["Coupons"];
 
-            foreach (JToken vsm in JArray.Parse(item["Tags"]["ValidServiceMethods"].ToString()).Children())
-            {
-                if (serviceType.ToString() == vsm.ToString())
-                {
-                    isAcceptableOrderType = true;
-                    break;
-                }
-            }
-
-            if (!isAcceptableOrderType)
+            if (!coupon.serviceTypes.Contains(serviceType))
             {
                 throw new NotSupportedException($"Coupon '{coupon.code}' does not support your service type.");
             }
@@ -164,7 +153,7 @@ namespace DominosNET
                 JObject couponO = (JObject)jCoupon;
                 if (couponO["Code"].ToString() == coupon.code)
                 {
-                    throw new Exception($"Coupon '{coupon.code}' already exists!");
+                    throw new DuplicateItemException($"Coupon '{coupon.code}' already exists!");
                 }
             }
 
@@ -364,13 +353,40 @@ namespace DominosNET
           System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
     }
 
+    [Serializable]
+    public class DuplicateItemException : Exception
+    {
+        public DuplicateItemException() { }
+        public DuplicateItemException(string message) : base(message) { }
+        public DuplicateItemException(string message, Exception inner) : base(message, inner) { }
+        protected DuplicateItemException(
+          System.Runtime.Serialization.SerializationInfo info,
+          System.Runtime.Serialization.StreamingContext context) : base(info, context) { }
+    }
+
     public readonly struct Coupon
     {
-        public readonly string code;
+        public readonly string code, description;
+        public readonly decimal price;
+        public readonly List<ServiceType> serviceTypes;
 
-        public Coupon(string code)
+        public Coupon(Order order, string code)
         {
             this.code = code;
+
+            if ((JObject)order.menuJSON["Coupons"][code] == null)
+            {
+                throw new InvalidItemException($"Invalid coupon code '{code}'.");
+            }
+
+            this.description = order.menuJSON["Coupons"][code]["Name"].ToString();
+            this.price = order.menuJSON["Coupons"][code]["Price"].ToObject<decimal>();
+
+            serviceTypes = new List<ServiceType>();
+            foreach (JToken serviceType in JArray.Parse(((JObject)order.menuJSON["Coupons"][code])["Tags"]["ValidServiceMethods"].ToString()).Children())
+            {
+                serviceTypes.Add(Enum.Parse<ServiceType>(serviceType.ToString().Replace(" ", ""), true));
+            }
         }
     }
 
